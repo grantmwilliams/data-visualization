@@ -4,10 +4,8 @@ from itertools import tee
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import time
-
-from IPython import display
-
+from moviepy.editor import VideoClip
+from moviepy.video.io.bindings import mplfig_to_npimage
 
 def distance(points):
     """ distance
@@ -49,7 +47,7 @@ def get_distance(cities, x, y):
     return sum([distance(i) for i in pairwise(zip(x[cities], y[cities]))])
 
 
-def solve_tsp(X, Y, max_iter=1000, pop_size=100):
+def solve_tsp():
 
     """ solve_tsp:
 
@@ -94,8 +92,8 @@ def solve_tsp(X, Y, max_iter=1000, pop_size=100):
     ax2.set_xlim(0, 100)
     ax2.set_ylim(np.amax(distances), 0)
 
-
     for gen in range(0 + 1, max_iter + 1):
+        flag = False
         new_pop = pop
 
         #  tournament selection and mutation
@@ -145,6 +143,7 @@ def solve_tsp(X, Y, max_iter=1000, pop_size=100):
 
         #  update new best
         if cur_best < best:
+            flag = True
             ax1.clear()
             best_path = cur_path
             best = cur_best
@@ -159,14 +158,34 @@ def solve_tsp(X, Y, max_iter=1000, pop_size=100):
 
             fig.suptitle("GA TSP Solver\nGen: " + str(gen) + " Distance: " + str(best))
 
-        if gen == max_iter:
 
+        if gen == max_iter:
+            flag = True
             best_gens.append(gen)
             all_best.append(best)
             ax2.plot(best_gens, all_best, '-r')
 
             fig.suptitle("GA TSP Solver\nGen: " + str(gen) + " Distance: " + str(best))
 
-            display.clear_output(wait=True)
-            display.display(plt.gcf())
-            time.sleep(0.05)
+        if flag:
+            plt.pause(0.05)
+            yield fig
+
+
+X = np.random.randint(0, 100, size=15)
+Y = np.random.randint(0, 100, size=15)
+
+pop_size = 100
+max_iter = 1000
+
+step = solve_tsp()
+
+
+def write_frame(i):
+    frame = next(step)
+
+    return mplfig_to_npimage(frame)
+
+
+ani = VideoClip(write_frame, duration=10)
+ani.write_videofile('tsp.mp4', fps=3)
